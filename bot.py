@@ -15,27 +15,13 @@ from memory import build_context, maybe_update_summary, should_summarize
 load_dotenv()
 BOT_TOKEN = os.getenv("BOT_TOKEN")
 WEBHOOK_URL = os.getenv("WEBHOOK_URL")
-<<<<<<< HEAD
 ADMIN_ID = int(os.getenv("ADMIN_ID","0"))
 MODEL = os.getenv("OPENAI_MODEL", "gpt-5")
-=======
-ADMIN_ID = int(os.getenv("ADMIN_ID", "0"))
->>>>>>> 118367c70ad44a0ee6265f7de8b9f90bea84fae2
 
 logging.basicConfig(level=logging.INFO, format="%(asctime)s %(levelname)s %(message)s")
 
 client = OpenAI(api_key=os.getenv("OPENAI_API_KEY"))
-<<<<<<< HEAD
-=======
-SYSTEM_PROMPT = (
-    "You are FinancialGrowth-GPT for Damarius. "
-    "Forward-thinking, opinionated, practical. "
-    "Default to numbered steps. Cut fluff. Track recurring goals and blockers. "
-    "Push for clarity. Offer one bold next action at the end of each reply."
-)
->>>>>>> 118367c70ad44a0ee6265f7de8b9f90bea84fae2
 
-<<<<<<< HEAD
 FGHQ_SYSTEM_PROMPT = """
 You are the Financial Growth HQ Mentor Agent (FGHQ Mentor Agent).
 Your role is to act as Damarius Marquise Morris’s AI mentor/coach for building his business, Financial Growth HQ.
@@ -55,11 +41,8 @@ def load_system_prompt() -> str:
     return ("You are the FGHQ Mentor Agent. Be practical, forward-thinking, concise. "
             "Use headings, bullets, numbered steps. Give one bold next action at the end.")
 
-SYSTEM_PROMPT = load_system_prompt()
+FGHQ_SYSTEM_PROMPT = load_system_prompt()
 
-=======
-# --- Handlers ---
->>>>>>> 118367c70ad44a0ee6265f7de8b9f90bea84fae2
 async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
     await update.message.reply_text("I’m live. Send me anything.\n\nCommands:\n/reset – clear memory")
 
