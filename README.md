@@ -1,1 +1,0 @@
-# FGHQ_GPT
