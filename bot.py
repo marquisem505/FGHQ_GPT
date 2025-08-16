@@ -2,7 +2,11 @@ import os, logging, asyncio
 from dotenv import load_dotenv
 from aiohttp import web
 from telegram import Update
-from telegram.ext import Application, ApplicationBuilder, CommandHandler, MessageHandler, ContextTypes, filters
+from telegram.ext import (
+    Application, ApplicationBuilder,
+    CommandHandler, MessageHandler,
+    ContextTypes, filters
+)
 from openai import OpenAI
 
 from db import init_db, add_message, wipe_user
@@ -11,16 +15,19 @@ from memory import build_context, maybe_update_summary, should_summarize
 load_dotenv()
 BOT_TOKEN = os.getenv("BOT_TOKEN")
 WEBHOOK_URL = os.getenv("WEBHOOK_URL")
-ADMIN_ID = int(os.getenv("ADMIN_ID","0"))
+ADMIN_ID = int(os.getenv("ADMIN_ID", "0"))
 
 logging.basicConfig(level=logging.INFO, format="%(asctime)s %(levelname)s %(message)s")
 
 client = OpenAI(api_key=os.getenv("OPENAI_API_KEY"))
 SYSTEM_PROMPT = (
-    "You are FinancialGrowth-GPT for Damarius. forward-thinking, opinionated, practical."
-    "Default to numbered steps. Cut fluff. Track recurring goals and blockers. Push for clarity. Offer one bold next action at the end of each reply."
+    "You are FinancialGrowth-GPT for Damarius. "
+    "Forward-thinking, opinionated, practical. "
+    "Default to numbered steps. Cut fluff. Track recurring goals and blockers. "
+    "Push for clarity. Offer one bold next action at the end of each reply."
 )
 
+# --- Handlers ---
 async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
     await update.message.reply_text("I’m live. Send me anything.\n\nCommands:\n/reset – clear memory")
 
@@ -42,19 +49,21 @@ async def chat(update: Update, context: ContextTypes.DEFAULT_TYPE):
     msgs = build_context(uid, client, SYSTEM_PROMPT)
 
     # call OpenAI
-    resp = client.responses.create(model="gpt-5", input=msgs + [{"role":"user","content":user_text}])
-    answer = (resp.output_text or "").strip() or "…"  # safe fallback
+    resp = client.chat.completions.create(
+        model="gpt-5",
+        messages=msgs + [{"role": "user", "content": user_text}],
+    )
+    answer = (resp.choices[0].message.content or "").strip() or "…"
 
     # send + store
     await update.message.reply_text(answer)
     add_message(uid, "assistant", answer)
 
-    # background summarization (non-blocking)
+    # background summarization
     try:
-        recent_pairs = sum(1 for r,_ in msgs if r in ("user","assistant")) // 2
+        recent_pairs = sum(1 for r in msgs if r.get("role") in ("user", "assistant")) // 2
         if should_summarize(recent_pairs):
-            loop = asyncio.get_event_loop()
-            loop.run_in_executor(None, maybe_update_summary, uid, client)
+            asyncio.create_task(maybe_update_summary(uid, client))
     except Exception as e:
         logging.warning(f"Summarize skip: {e}")
 
@@ -80,6 +89,10 @@ async def main():
     app.add_handler(CommandHandler("reset", reset))
     app.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, chat))
 
+    # Initialize app (important for webhook)
+    await app.initialize()
+    await app.bot.set_webhook(url=WEBHOOK_URL)
+
     # Aiohttp web server
     webapp = web.Application()
     webapp["bot_app"] = app
@@ -87,9 +100,6 @@ async def main():
         web.post("/telegram-webhook", handle_webhook),
         web.get("/healthz", health),
     ])
-
-    # set webhook
-    await app.bot.set_webhook(url=WEBHOOK_URL)
 
     runner = web.AppRunner(webapp)
     await runner.setup()
