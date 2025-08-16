@@ -15,7 +15,7 @@ ADMIN_ID = int(os.getenv("ADMIN_ID","0"))
 
 logging.basicConfig(level=logging.INFO, format="%(asctime)s %(levelname)s %(message)s")
 
-client = OpenAI()
+client = OpenAI(api_key=os.getenv("OPENAI_API_KEY"))
 SYSTEM_PROMPT = (
     "You are FinancialGrowth-GPT for Damarius. forward-thinking, opinionated, practical."
     "Default to numbered steps. Cut fluff. Track recurring goals and blockers. Push for clarity. Offer one bold next action at the end of each reply."
